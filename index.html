@@ -8,53 +8,332 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #111; color: #eee; }
     #map { height: 100vh; width: 100%; }
     .toolbar {
       position: absolute;
-      top: 10px;
-      left: 10px;
+      top: 16px;
+      left: 16px;
       z-index: 1000;
-      background: white;
-      padding: 12px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      width: 280px;
+      width: 310px;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(20, 18, 16, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.42);
+      color: #f5f1ec;
+      animation: fadeInUp 0.45s ease both;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .toolbar strong {
+      display: block;
+      font-size: 16px;
+      letter-spacing: 0.2px;
+      margin-bottom: 10px;
     }
     .toolbar input, .toolbar select {
       width: 100%;
-      padding: 8px;
+      height: 42px;
+      padding: 10px 12px;
       margin-top: 8px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
       box-sizing: border-box;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      outline: none;
+      transition: 0.2s ease;
+    }
+    .toolbar input:focus, .toolbar select:focus {
+      border-color: #b68a62;
+      box-shadow: 0 0 0 3px rgba(182,138,98,0.20);
+      background: rgba(255,255,255,0.12);
+    }
+    .toolbar select option {
+      background: #1f1b18;
+      color: #fff;
+    }
+    .toolbar input::placeholder {
+      color: #aaa;
     }
     .popup-title { font-weight: bold; font-size: 14px; margin-bottom: 6px; }
-    .leaflet-top.leaflet-right { top: 12px; right: 12px; }
+    .leaflet-top.leaflet-right {
+  top: 120px !important;
+  right: 16px !important;
+  z-index: 9999 !important;
+}
+
+.leaflet-control-container,
+.leaflet-control-zoom {
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+}
+
+/* kesin çakışma fix */
+#map,
+.leaflet-pane,
+.leaflet-map-pane {
+  pointer-events: auto !important;
+}
+
+/* sadece panel alanı tıklama alsın */
+.toolbar {
+  pointer-events: auto;
+}
+
+/* tema kutusu sadece kendi butonlarında aktif */
+.theme-box {
+  pointer-events: none;
+}
+
+.theme-main-btn,
+.theme-options,
+.theme-choice {
+  pointer-events: auto;
+}
     .leaflet-control-zoom {
-      border: none !important;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.18) !important;
-      border-radius: 14px !important;
+      border: 1px solid rgba(255,255,255,0.10) !important;
+      box-shadow: 0 14px 34px rgba(0,0,0,0.35) !important;
+      border-radius: 16px !important;
       overflow: hidden;
+      backdrop-filter: blur(10px);
     }
     .leaflet-control-zoom a {
-      width: 42px !important;
-      height: 42px !important;
-      line-height: 42px !important;
+      width: 44px !important;
+      height: 44px !important;
+      line-height: 44px !important;
       font-size: 22px !important;
       font-weight: bold;
-      background: white !important;
-      color: #222 !important;
+      background: rgba(25,22,20,0.92) !important;
+      color: #fff !important;
       border: none !important;
     }
     .leaflet-control-zoom a:hover {
-      background: #f4f4f4 !important;
+      background: #333 !important;
     }
-  </style>
+    .leaflet-control-zoom a,
+    .leaflet-control-zoom-in,
+    .leaflet-control-zoom-out {
+      pointer-events: auto !important;
+      cursor: pointer !important;
+    }
+    #searchBox {
+      padding-left: 38px;
+      background: rgba(255,255,255,0.08) url('https://cdn-icons-png.flaticon.com/512/54/54481.png') no-repeat 13px center;
+      background-size: 15px;
+      color: #fff;
+    }
+    #searchBox::placeholder {
+      color: #aaa;
+    }
+    .reset-btn {
+      width: 100%;
+      height: 42px;
+      margin-top: 10px;
+      padding: 10px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #7a5236, #4b3325);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+      transition: 0.2s ease;
+    }
+    .reset-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 14px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.5);
+      background: #1f1f1f;
+      color: #eee;
+    }
+    .leaflet-popup-tip {
+      background: #1f1f1f;
+    }
+    .leaflet-popup-content {
+      line-height: 1.45;
+    }
+    .leaflet-marker-icon {
+      transition: transform 0.18s ease;
+    }
+    .leaflet-marker-icon:hover {
+      transform: scale(1.15);
+      z-index: 9999 !important;
+    }
+    .marker-pop {
+      animation: markerPop 0.24s ease;
+    }
+    @keyframes markerPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+    .leaflet-tooltip {
+      border: none !important;
+      border-radius: 10px !important;
+      padding: 7px 10px !important;
+      background: rgba(20,18,16,0.92) !important;
+      color: #fff !important;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.35) !important;
+      font-weight: 700;
+    }
+    .leaflet-tooltip-top:before {
+      border-top-color: rgba(20,18,16,0.92) !important;
+    }
+    #loadingBadge {
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(20,18,16,0.88);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      backdrop-filter: blur(12px);
+      font-weight: 700;
+      opacity: 1;
+      transition: 0.35s ease;
+    }
+    #loadingBadge.hide {
+      opacity: 0;
+      transform: translateX(-50%) translateY(10px);
+      pointer-events: none;
+    }
+    .theme-box {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 1400;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .theme-main-btn {
+      padding: 11px 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 16px;
+      background: rgba(20,18,16,0.88);
+      backdrop-filter: blur(14px);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      box-shadow: 0 14px 34px rgba(0,0,0,0.35);
+      transition: 0.2s ease;
+    }
+    .theme-main-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(35,30,26,0.94);
+    }
+    .theme-options {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 18px;
+      background: rgba(20,18,16,0.90);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 16px 38px rgba(0,0,0,0.38);
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      opacity: 0;
+      transform: translateY(-8px) scale(0.97);
+      pointer-events: none;
+      transition: 0.22s ease;
+    }
+    .theme-box.open .theme-options {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    .theme-choice {
+      width: 104px;
+      padding: 9px 10px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 13px;
+      cursor: pointer;
+      font-weight: 800;
+      transition: 0.2s ease;
+    }
+    .theme-choice:hover {
+      transform: translateX(-2px);
+      filter: brightness(1.08);
+    }
+    .theme-white { background: #f7f3ed; color: #111; }
+    .theme-black { background: #111; color: #fff; border: 1px solid #444; }
+    .theme-mocha { background: linear-gradient(135deg, #7a5236, #4b3325); color: #fff; }
+    
+  
+
+/* --- Responsive (Mobil) --- */
+@media (max-width: 768px) {
+  .toolbar {
+    width: calc(100% - 20px);
+    left: 10px;
+    right: 10px;
+    top: 10px;
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  #searchBox,
+  .toolbar select,
+  .reset-btn {
+    height: 38px;
+    font-size: 14px;
+  }
+
+  .toolbar strong {
+    font-size: 14px;
+  }
+
+  .theme-box {
+    top: 10px;
+    right: 10px;
+  }
+
+  .leaflet-top.leaflet-right {
+    top: 220px !important;
+    right: 12px;
+  }
+}
+
+/* --- KESİN TIKLAMA FIX --- */
+.toolbar,
+.theme-box {
+  pointer-events: none;
+}
+
+.toolbar *,
+.theme-box * {
+  pointer-events: auto;
+}
+
+.leaflet-control-container {
+  z-index: 9999 !important;
+}
+
+.leaflet-control-zoom {
+  z-index: 9999 !important;
+}
+
+</style>
 </head>
 <body>
   <div class="toolbar">
     <strong>İstanbul Edebi Mekanlar</strong>
+    <div style="font-size:12px; color:#bfb6ad; margin-top:-4px; margin-bottom:8px;">Haritada ara, filtrele ve keşfet</div>
     <input type="text" id="searchBox" placeholder="Mekan ara..." />
     <select id="filterType">
       <option value="all">Tümü</option>
@@ -62,8 +341,20 @@
       <option value="kutuphane">Kütüphaneler</option>
       <option value="universite">Üniversiteler</option>
     </select>
+    <button class="reset-btn" id="resetMapBtn">Haritayı ortala</button>
+    
   </div>
   <div id="map"></div>
+  <div id="loadingBadge">Harita hazırlanıyor...</div>
+
+  <div class="theme-box" id="themeBox">
+    <button id="styleToggle" class="theme-main-btn">Tema</button>
+    <div class="theme-options">
+      <button class="theme-choice theme-white" data-style="white">Beyaz</button>
+      <button class="theme-choice theme-black" data-style="black">Siyah</button>
+      <button class="theme-choice theme-mocha" data-style="mocha">Mokka</button>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -76,10 +367,35 @@
       position: 'topright'
     }).addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+    // ---- HARİTA STİLLERİ ----
+    const layers = {
+      white: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap & CartoDB'
+      }),
+      black: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap & CartoDB'
+      }),
+      mocha: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      })
+    };
+
+    let currentLayer = layers.black.addTo(map);
+    currentLayer.setZIndex(1);
+
+    function setMapStyle(style) {
+      if (!layers[style]) return;
+      if (currentLayer) map.removeLayer(currentLayer);
+      currentLayer = layers[style].addTo(map);
+      currentLayer.setZIndex(1);
+
+      const mapEl = document.getElementById('map');
+      mapEl.classList.remove('map-white', 'map-black', 'map-mocha');
+      mapEl.classList.add('map-' + style);
+    }
 
     const mekanlar = [
       { ad: '1. Aşiyan Müzesi', lat: 41.08265, lng: 29.05345, tur: 'muze', aciklama: 'Tevfik Fikret ile ilişkili önemli edebiyat müzesi.' },
@@ -273,11 +589,27 @@
         if (nameMatch && typeMatch) {
           const marker = L.marker([mekan.lat, mekan.lng]);
           const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mekan.ad + ' İstanbul')}`;
+          const typeIcon = mekan.tur === 'muze' ? '🏛️' : mekan.tur === 'universite' ? '🎓' : '📚';
+
+          marker.bindTooltip(mekan.ad, {
+            direction: 'top',
+            offset: [0, -12],
+            opacity: 0.95
+          });
+
+          marker.on('click', function () {
+            if (this._icon) {
+              this._icon.classList.remove('marker-pop');
+              void this._icon.offsetWidth;
+              this._icon.classList.add('marker-pop');
+            }
+          });
+
           marker.bindPopup(`
-            <div class="popup-title">${mekan.ad}</div>
+            <div class="popup-title">${typeIcon} ${mekan.ad}</div>
             <div>${mekan.aciklama}</div>
-            <div><strong>Tür:</strong> ${mekan.tur}</div>
-            <div style="margin-top:8px;"><a href="${mapsUrl}" target="_blank" rel="noopener">Google Maps’te kontrol et</a></div>
+            <div style="margin-top:6px;"><strong>Tür:</strong> ${mekan.tur}</div>
+            <div style="margin-top:9px;"><a href="${mapsUrl}" target="_blank" rel="noopener">Google Maps’te kontrol et</a></div>
           `);
           clusterGroup.addLayer(marker);
           markerRefs.push({ marker, mekan });
@@ -288,6 +620,10 @@
     }
 
     renderMarkers();
+    setTimeout(() => {
+      const badge = document.getElementById('loadingBadge');
+      if (badge) badge.classList.add('hide');
+    }, 900);
 
     async function geocodeAndFix() {
       const updatedPlaces = [];
@@ -369,6 +705,27 @@
 
     document.getElementById('filterType').addEventListener('change', function() {
       renderMarkers(document.getElementById('searchBox').value, this.value);
+    });
+
+    document.getElementById('resetMapBtn').addEventListener('click', function() {
+      document.getElementById('searchBox').value = '';
+      document.getElementById('filterType').value = 'all';
+      renderMarkers();
+      map.setView([41.015137, 28.979530], 11);
+    });
+
+    const themeBox = document.getElementById('themeBox');
+    const styleToggle = document.getElementById('styleToggle');
+
+    styleToggle.addEventListener('click', function() {
+      themeBox.classList.toggle('open');
+    });
+
+    document.querySelectorAll('.theme-choice').forEach(function(button) {
+      button.addEventListener('click', function() {
+        setMapStyle(button.dataset.style);
+        themeBox.classList.remove('open');
+      });
     });
   </script>
 </body>
