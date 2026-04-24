@@ -287,21 +287,40 @@
       map.addLayer(clusterGroup);
     }
 
+    renderMarkers();
+
     async function geocodeAndFix() {
+      const updatedPlaces = [];
+
       for (let m of mekanlar) {
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(m.ad + ' İstanbul')}`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(m.ad + ' İstanbul')}`);
           const data = await res.json();
+
           if (data && data.length > 0) {
-            m.lat = parseFloat(data[0].lat);
-            m.lng = parseFloat(data[0].lon);
+            updatedPlaces.push({
+              item: m,
+              lat: parseFloat(data[0].lat),
+              lng: parseFloat(data[0].lon)
+            });
           }
-        } catch (e) {}
+        } catch (e) {
+          // İnternet / servis hatası olursa mevcut koordinatlarla devam eder.
+        }
       }
-      renderMarkers();
+
+      updatedPlaces.forEach(place => {
+        place.item.lat = place.lat;
+        place.item.lng = place.lng;
+      });
+
+      renderMarkers(
+        document.getElementById('searchBox').value,
+        document.getElementById('filterType').value
+      );
     }
 
-    geocodeAndFix();
+    setTimeout(geocodeAndFix, 500);
 
     document.getElementById('searchBox').addEventListener('input', function() {
       const query = this.value;
