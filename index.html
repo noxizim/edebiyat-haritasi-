@@ -2,154 +2,354 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>İstanbul Edebi Mekanlar Haritası | TÜBİTAK Projesi</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>İstanbul Edebi Mekanlar Haritası</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-  
   <style>
-    /* GitHub Pages ve Mobil Uyumluluk İçin Genel Stiller */
-    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-    #map { height: 100vh; width: 100%; background-color: #e5e3df; }
-    
-    /* Arayüz Paneli */
+    body { margin: 0; font-family: Arial, sans-serif; }
+    #map { height: 100vh; width: 100%; }
     .toolbar {
       position: absolute;
-      top: 15px;
-      left: 15px;
+      top: 10px;
+      left: 10px;
       z-index: 1000;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 15px;
+      background: white;
+      padding: 12px;
       border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      width: 300px;
-      backdrop-filter: blur(5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      width: 280px;
     }
-    
-    .toolbar h2 { margin: 0 0 10px 0; font-size: 16px; color: #1b1f23; border-bottom: 2px solid #0f4c81; padding-bottom: 5px; }
-    .toolbar p { font-size: 12px; color: #57606a; margin: 5px 0 10px 0; }
-    
-    .controls input, .controls select {
+    .toolbar input, .toolbar select {
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       margin-top: 8px;
-      border-radius: 6px;
-      border: 1px solid #d0d7de;
-      font-size: 14px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
       box-sizing: border-box;
-      outline: none;
     }
-    
-    .controls input:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.3); }
-
-    /* Popup Tasarımı */
-    .popup-content { min-width: 150px; }
-    .popup-title { font-weight: bold; font-size: 15px; color: #0969da; margin-bottom: 5px; }
-    .category-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 10px;
-      background: #f1f8ff;
-      color: #0550ae;
-      border: 1px solid #0550ae;
-      margin-top: 8px;
-      text-transform: uppercase;
+    .popup-title { font-weight: bold; font-size: 14px; margin-bottom: 6px; }
+    .leaflet-top.leaflet-right { top: 12px; right: 12px; }
+    .leaflet-control-zoom {
+      border: none !important;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.18) !important;
+      border-radius: 14px !important;
+      overflow: hidden;
     }
-
-    /* Zoom Butonlarını Sağa Al (Mobil için daha ergonomik) */
-    .leaflet-right { right: 10px !important; }
-    
-    @media (max-width: 480px) {
-      .toolbar { width: calc(100% - 30px); top: 10px; left: 10px; }
+    .leaflet-control-zoom a {
+      width: 42px !important;
+      height: 42px !important;
+      line-height: 42px !important;
+      font-size: 22px !important;
+      font-weight: bold;
+      background: white !important;
+      color: #222 !important;
+      border: none !important;
+    }
+    .leaflet-control-zoom a:hover {
+      background: #f4f4f4 !important;
     }
   </style>
 </head>
 <body>
-
   <div class="toolbar">
-    <h2>İstanbul Edebi Mekanlar</h2>
-    <p>TÜBİTAK Projesi kapsamında hazırlanmıştır.</p>
-    <div class="controls">
-      <input type="text" id="searchBox" placeholder="Mekan veya yazar adı yazın..." />
-      <select id="filterType">
-        <option value="all">Tüm Kategoriler</option>
-        <option value="muze">Edebiyat Müzeleri</option>
-        <option value="kutuphane">Kütüphaneler</option>
-        <option value="universite">Üniversiteler & Akademik</option>
-      </select>
-    </div>
+    <strong>İstanbul Edebi Mekanlar</strong>
+    <input type="text" id="searchBox" placeholder="Mekan ara..." />
+    <select id="filterType">
+      <option value="all">Tümü</option>
+      <option value="muze">Müzeler</option>
+      <option value="kutuphane">Kütüphaneler</option>
+      <option value="universite">Üniversiteler</option>
+    </select>
   </div>
-
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  
   <script>
-    // Harita Başlangıç Ayarları
-    const map = L.map('map', { zoomControl: false }).setView([41.015, 28.979], 11);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    const map = L.map('map', {
+      zoomControl: false
+    }).setView([41.015137, 28.979530], 11);
 
-    // Google Uydu Katmanı
-    const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=y&hl=tr&x={x}&y={y}&z={z}', {
-      maxZoom: 20,
-      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-      attribution: '&copy; Google Maps'
+    L.control.zoom({
+      position: 'topright'
     }).addTo(map);
 
-    // Veri Seti (1.html'den aktarılan 140 nokta)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
     const mekanlar = [
-        { "ad": "1. Aşiyan Müzesi", "lat": 41.0346, "lng": 29.0536, "tur": "muze", "bilgi": "Tevfik Fikret'in evi." },
-        { "ad": "2. Masumiyet Müzesi", "lat": 41.0313, "lng": 28.9804, "tur": "muze", "bilgi": "Orhan Pamuk'un roman müzesi." },
-        { "ad": "3. Sait Faik Abasıyanık Müzesi", "lat": 40.8797, "lng": 29.0664, "tur": "muze", "bilgi": "Burgazada'daki yazar evi." },
-        { "ad": "4. Orhan Kemal Müzesi", "lat": 41.0311, "lng": 28.9840, "tur": "muze", "bilgi": "Yazarın kişisel eşyaları." },
-        { "ad": "5. Hüseyin Rahmi Gürpınar Müzesi", "lat": 40.8795, "lng": 29.0881, "tur": "muze", "bilgi": "Heybeliada'daki tarihi müze." },
-        // ... (Burada 140 verinin tamamı yer alacak - Önceki kodda verdiğim listenin aynısını buraya ekledim)
-        { "ad": "9. A. Hamdi Tanpınar Edebiyat Müze Kütüphanesi", "lat": 41.0125, "lng": 28.9791, "tur": "kutuphane", "bilgi": "Gülhane Parkı içinde." },
-        { "ad": "10. Beyazıt Devlet Kütüphanesi", "lat": 41.0104, "lng": 28.9642, "tur": "kutuphane", "bilgi": "Türkiye'nin ilk devlet kütüphanesi." }
-        // NOT: Mesaj boyutu sınırı nedeniyle buradaki 140 satırı kısaltıyorum, 
-        // sen yukarıda paylaştığım tam listeyi bu 'mekanlar' dizisinin içine yapıştırabilirsin.
+      { ad: '1. Aşiyan Müzesi', lat: 41.08265, lng: 29.05345, tur: 'muze', aciklama: 'Tevfik Fikret ile ilişkili önemli edebiyat müzesi.' },
+      { ad: '2. Masumiyet Müzesi', lat: 41.030906, lng: 28.979788, tur: 'muze', aciklama: 'Orhan Pamuk romanıyla ilişkili edebiyat müzesi.' },
+      { ad: '3. Sait Faik Abasıyanık Müzesi', lat: 40.88111, lng: 29.06750, tur: 'muze', aciklama: 'Burgazada’daki Sait Faik Abasıyanık müze evi.' },
+      { ad: '4. Orhan Kemal Müzesi', lat: 41.030626, lng: 28.983651, tur: 'muze', aciklama: 'Cihangir’de Orhan Kemal’in yaşamı ve eserleriyle ilişkili müze.' },
+      { ad: '5. Hüseyin Rahmi Gürpınar Müzesi', lat: 40.8795, lng: 29.0881, tur: 'muze', aciklama: 'Hüseyin Rahmi Gürpınar ile ilişkili müze.' },
+      { ad: '6. Reşat Nuri Güntekin Evi', lat: 40.8652, lng: 29.1305, tur: 'muze', aciklama: 'Reşat Nuri Güntekin ile ilişkili edebi mekan.' },
+      { ad: '7. Mısır Apartmanı', lat: 41.0326, lng: 28.9772, tur: 'muze', aciklama: 'İstanbul kültür ve edebiyat çevreleriyle ilişkili tarihi yapı.' },
+      { ad: '8. Barış Manço Müzesi', lat: 40.9850, lng: 29.0250, tur: 'muze', aciklama: 'Sanat ve kültür hafızasında önemli müze.' },
+      { ad: '9. A. Hamdi Tanpınar Edebiyat Müze Kütüphanesi', lat: 41.0125, lng: 28.9791, tur: 'kutuphane', aciklama: 'Edebiyat temalı müze kütüphanesi.' },
+      { ad: '10. Beyazıt Devlet Kütüphanesi', lat: 41.0104, lng: 28.9642, tur: 'kutuphane', aciklama: 'İstanbul\'un önemli kütüphanelerinden biri.' },
+      { ad: '11. Süleymaniye Yazma Eserler Kütüphanesi', lat: 41.0161, lng: 28.9638, tur: 'kutuphane', aciklama: 'Yazma eserleriyle öne çıkan kütüphane.' },
+      { ad: '12. Millet Yazma Eserler Kütüphanesi', lat: 41.0163, lng: 28.9465, tur: 'kutuphane', aciklama: 'Yazma ve nadir eserler için önemli kütüphane.' },
+      { ad: '13. İstanbul Araştırmaları Enstitüsü', lat: 41.0315, lng: 28.9749, tur: 'kutuphane', aciklama: 'İstanbul araştırmaları için önemli kurum.' },
+      { ad: '14. Kadın Eserleri Kütüphanesi', lat: 41.0317, lng: 28.9555, tur: 'kutuphane', aciklama: 'Kadın çalışmaları ve arşivleriyle öne çıkan kütüphane.' },
+      { ad: '15. Salt Galata Arşivi ve Kütüphanesi', lat: 41.0235, lng: 28.9740, tur: 'kutuphane', aciklama: 'Araştırma, arşiv ve kütüphane mekanı.' },
+      { ad: '16. İSAM Kütüphanesi', lat: 41.0250, lng: 29.0400, tur: 'kutuphane', aciklama: 'Akademik araştırma kütüphanesi.' },
+      { ad: '17. Çelik Gülersoy Kütüphanesi', lat: 41.0080, lng: 28.9800, tur: 'kutuphane', aciklama: 'Şehir tarihi ve kültür çalışmalarıyla ilişkili kütüphane.' },
+      { ad: '18. Pera Müzesi', lat: 41.0310, lng: 28.9750, tur: 'muze', aciklama: 'Sanat ve kültür müzesi.' },
+      { ad: '19. İstanbul Modern Sanat Müzesi Kütüphanesi', lat: 41.0250, lng: 28.9820, tur: 'kutuphane', aciklama: 'Sanat kaynakları ve araştırma kütüphanesi.' },
+      { ad: '20. Harbiye Askeri Müzesi', lat: 41.0480, lng: 28.9880, tur: 'muze', aciklama: 'Tarih ve kültür müzesi.' },
+      { ad: '21. Beşiktaş Deniz Müzesi', lat: 41.0420, lng: 29.0060, tur: 'muze', aciklama: 'Denizcilik tarihi ve kültür müzesi.' },
+      { ad: '22. Atatürk Kitaplığı (İBB)', lat: 41.039125, lng: 28.989564, tur: 'kutuphane', aciklama: 'İBB’nin önemli araştırma kütüphanesi.' },
+      { ad: '23. Orhan Kemal İl Halk Kütüphanesi', lat: 41.0100, lng: 28.9640, tur: 'kutuphane', aciklama: 'Halk kütüphanesi.' },
+      { ad: '24. Üsküdar Mihrimah Kütüphanesi', lat: 41.0260, lng: 29.0150, tur: 'kutuphane', aciklama: 'Üsküdar bölgesindeki kütüphane.' },
+      { ad: '25. İBB Sevgi Soysal Kütüphanesi', lat: 41.0360, lng: 28.9850, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '26. İBB Erdem Bayazıt Kütüphanesi', lat: 41.0470, lng: 28.9320, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '27. İBB Peyami Safa Kütüphanesi', lat: 41.0180, lng: 28.9400, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '28. İBB Attilâ İlhan Kütüphanesi', lat: 41.0340, lng: 28.9660, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '29. İBB Fakir Baykurt Kütüphanesi', lat: 40.9800, lng: 28.7200, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '30. İBB Ahmed Arif Kütüphanesi', lat: 41.1070, lng: 28.8620, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '31. Kadıköy Belediyesi TESAK', lat: 40.9915, lng: 29.0238, tur: 'kutuphane', aciklama: 'Kadıköy Belediyesi kültür ve sanat kütüphanesi.' },
+      { ad: '32. Aziz Berker İlçe Halk Kütüphanesi', lat: 40.9855, lng: 29.0300, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '33. Fatih Merkez Kütüphanesi', lat: 41.0150, lng: 28.9450, tur: 'kutuphane', aciklama: 'Fatih bölgesindeki merkez kütüphane.' },
+      { ad: '34. İBB Cahit Zarifoğlu Kütüphanesi', lat: 41.1080, lng: 28.8000, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '35. İBB Rasim Özdenören Kütüphanesi', lat: 41.0950, lng: 28.7900, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '36. İBB Sezai Karakoç Kütüphanesi', lat: 41.0250, lng: 28.8700, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '37. İBB Cemil Meriç Kütüphanesi', lat: 41.0200, lng: 29.0950, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '38. İBB Muallim Cevdet Kütüphanesi', lat: 40.8900, lng: 29.1900, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '39. İBB Gülten Akın Kütüphanesi', lat: 41.0300, lng: 28.6700, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '40. İBB Yaşar Kemal Kütüphanesi', lat: 41.0400, lng: 28.6800, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '41. İBB Rıfat Ilgaz Kütüphanesi', lat: 41.1850, lng: 28.7400, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '42. İBB Afşar Timuçin Kütüphanesi', lat: 40.9800, lng: 29.1200, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '43. İBB Metin Erksan Kütüphanesi', lat: 41.0400, lng: 28.8500, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '44. Gaziosmanpaşa İlçe Halk Kütüphanesi', lat: 41.0550, lng: 28.9100, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '45. Merkezefendi Şehir Kütüphanesi', lat: 41.0155, lng: 28.9200, tur: 'kutuphane', aciklama: 'Şehir kütüphanesi.' },
+      { ad: '46. Nağmedar Kütüphanesi', lat: 41.0160, lng: 28.9210, tur: 'kutuphane', aciklama: 'Kütüphane ve kültür mekanı.' },
+      { ad: '47. Şemsipaşa İlçe Halk Kütüphanesi', lat: 41.0255, lng: 29.0120, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '48. Çinili Kütüphane', lat: 41.0220, lng: 29.0200, tur: 'kutuphane', aciklama: 'Tarihi kütüphane.' },
+      { ad: '49. İBB Haluk Dursun Kütüphanesi', lat: 41.0280, lng: 29.0300, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '50. Topkapı Sarayı Müzesi Kütüphanesi', lat: 41.0115, lng: 28.9830, tur: 'kutuphane', aciklama: 'Müze kütüphanesi.' },
+      { ad: '51. İstanbul Arkeoloji Müzeleri Kütüphanesi', lat: 41.0110, lng: 28.9810, tur: 'kutuphane', aciklama: 'Müze kütüphanesi.' },
+      { ad: '52. Türk ve İslam Eserleri Müzesi Kütüphanesi', lat: 41.0080, lng: 28.9740, tur: 'kutuphane', aciklama: 'Müze kütüphanesi.' },
+      { ad: '53. Sakıp Sabancı Müzesi Kütüphanesi', lat: 41.1060, lng: 29.0550, tur: 'kutuphane', aciklama: 'Müze kütüphanesi.' },
+      { ad: '54. Rahmi M. Koç Müzesi Kütüphanesi', lat: 41.0420, lng: 28.9490, tur: 'kutuphane', aciklama: 'Müze kütüphanesi.' },
+      { ad: '55. Rezan Has Müzesi Kütüphanesi', lat: 41.0255, lng: 28.9580, tur: 'kutuphane', aciklama: 'Müze kütüphanesi.' },
+      { ad: '56. Sadberk Hanım Müzesi Kütüphanesi', lat: 41.1620, lng: 29.0430, tur: 'kutuphane', aciklama: 'Müze kütüphanesi.' },
+      { ad: '57. Adalar İlçe Halk Kütüphanesi', lat: 40.8710, lng: 29.1250, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '58. Beşiktaş İlçe Halk Kütüphanesi', lat: 41.0450, lng: 29.0050, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '59. Zübeyde Hanım Kütüphanesi', lat: 41.0480, lng: 29.0100, tur: 'kutuphane', aciklama: 'Kütüphane.' },
+      { ad: '60. Beyoğlu İlçe Halk Kütüphanesi', lat: 41.0320, lng: 28.9750, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '61. Tarık Zafer Tunaya Kültür Merkezi Kütüphanesi', lat: 41.0275, lng: 28.9745, tur: 'kutuphane', aciklama: 'Kültür merkezi kütüphanesi.' },
+      { ad: '62. Şişli Merkez Kütüphanesi', lat: 41.0600, lng: 28.9880, tur: 'kutuphane', aciklama: 'Merkez kütüphane.' },
+      { ad: '63. Bakırköy İlçe Halk Kütüphanesi', lat: 40.9820, lng: 28.8750, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '64. Doğan Hızlan Kütüphanesi', lat: 40.9850, lng: 28.8720, tur: 'kutuphane', aciklama: 'Kütüphane.' },
+      { ad: '65. Bağcılar İlçe Halk Kütüphanesi', lat: 41.0350, lng: 28.8550, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '66. Bayrampaşa İlçe Halk Kütüphanesi', lat: 41.0450, lng: 28.9050, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '67. Eyüpsultan İlçe Halk Kütüphanesi', lat: 41.0480, lng: 28.9320, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '68. Ahmet Kekeç Kütüphanesi', lat: 41.0500, lng: 28.9350, tur: 'kutuphane', aciklama: 'Kütüphane.' },
+      { ad: '69. Kağıthane İlçe Halk Kütüphanesi', lat: 41.0800, lng: 28.9700, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '70. Küçükçekmece İlçe Halk Kütüphanesi', lat: 40.9950, lng: 28.7800, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '71. Silivri İlçe Halk Kütüphanesi', lat: 41.0700, lng: 28.2500, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '72. Çatalca İlçe Halk Kütüphanesi', lat: 41.1450, lng: 28.4600, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '73. Büyükçekmece İlçe Halk Kütüphanesi', lat: 41.0200, lng: 28.5800, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '74. Beylikdüzü İlçe Halk Kütüphanesi', lat: 41.0000, lng: 28.6400, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '75. Maltepe İlçe Halk Kütüphanesi', lat: 40.9250, lng: 29.1350, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '76. Tuzla İlçe Halk Kütüphanesi', lat: 40.8150, lng: 29.3000, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '77. Sarıyer İlçe Halk Kütüphanesi', lat: 41.1650, lng: 29.0550, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '78. Beykoz İlçe Halk Kütüphanesi', lat: 41.1350, lng: 29.0900, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '79. Şile İlçe Halk Kütüphanesi', lat: 41.1750, lng: 29.6100, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '80. Pendik İlçe Halk Kütüphanesi', lat: 40.8800, lng: 29.2300, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '81. Kemal Tahir Kütüphanesi', lat: 40.8750, lng: 29.2250, tur: 'kutuphane', aciklama: 'Kütüphane.' },
+      { ad: '82. Nazım Hikmet Kütüphanesi', lat: 40.9850, lng: 29.1250, tur: 'kutuphane', aciklama: 'Kütüphane.' },
+      { ad: '83. Ataşehir İlçe Halk Kütüphanesi', lat: 40.9880, lng: 29.1300, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '84. Esenler İlçe Halk Kütüphanesi', lat: 41.0400, lng: 28.8800, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '85. Güngören İlçe Halk Kütüphanesi', lat: 41.0200, lng: 28.8750, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '86. Sultangazi İlçe Halk Kütüphanesi', lat: 41.1050, lng: 28.8650, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '87. Sancaktepe İlçe Halk Kütüphanesi', lat: 41.0000, lng: 29.2200, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '88. Çekmeköy İlçe Halk Kütüphanesi', lat: 41.0300, lng: 29.1800, tur: 'kutuphane', aciklama: 'İlçe halk kütüphanesi.' },
+      { ad: '89. İBB Kemalettin Tuğcu Kütüphanesi', lat: 41.0350, lng: 28.6750, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '90. İBB Tarık Dursun K. Kütüphanesi', lat: 41.0450, lng: 28.6850, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '91. İBB Beltaş Kütüphanesi', lat: 41.0480, lng: 29.0260, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '92. İBB Moda İskelesi Kütüphanesi', lat: 40.9790, lng: 29.0230, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '93. İBB Troçki Evi Kütüphanesi', lat: 40.8650, lng: 29.1200, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '94. Arter Sanat Merkezi Kütüphanesi', lat: 41.0400, lng: 28.9750, tur: 'kutuphane', aciklama: 'Sanat merkezi kütüphanesi.' },
+      { ad: '95. Borusan Contemporary Kütüphanesi', lat: 41.0850, lng: 29.0550, tur: 'kutuphane', aciklama: 'Sanat ve kültür kütüphanesi.' },
+      { ad: '96. Akbank Sanat Kütüphanesi', lat: 41.0350, lng: 28.9800, tur: 'kutuphane', aciklama: 'Sanat kütüphanesi.' },
+      { ad: '97. Yapı Kredi Araştırma Kütüphanesi', lat: 41.0310, lng: 28.9760, tur: 'kutuphane', aciklama: 'Araştırma kütüphanesi.' },
+      { ad: '98. İş Sanat Kütüphanesi', lat: 41.0850, lng: 29.0100, tur: 'kutuphane', aciklama: 'Sanat kütüphanesi.' },
+      { ad: '99. Garanti Salt Beyoğlu Kütüphanesi', lat: 41.0330, lng: 28.9770, tur: 'kutuphane', aciklama: 'Araştırma ve kültür kütüphanesi.' },
+      { ad: '100. İslam Bilim ve Teknoloji Tarihi Müzesi', lat: 41.0130, lng: 28.9790, tur: 'muze', aciklama: 'Bilim ve teknoloji tarihi müzesi.' },
+      { ad: '101. İstanbul Modern Sanat Müzesi', lat: 41.0250, lng: 28.9820, tur: 'muze', aciklama: 'Modern sanat müzesi.' },
+      { ad: '102. Boğaziçi Üniversitesi Kütüphanesi', lat: 41.0830, lng: 29.0500, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '103. İTÜ Mustafa İnan Kütüphanesi', lat: 41.1050, lng: 29.0250, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '104. YTÜ Şevket Sabancı Kütüphanesi', lat: 41.0250, lng: 28.8900, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '105. Marmara Üniversitesi Kütüphanesi', lat: 40.9850, lng: 29.0550, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '106. Galatasaray Üniversitesi Kütüphanesi', lat: 41.0460, lng: 29.0200, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '107. İstanbul Üniversitesi Merkez Kütüphanesi', lat: 41.0110, lng: 28.9610, tur: 'universite', aciklama: 'Üniversite merkez kütüphanesi.' },
+      { ad: '108. Mimar Sinan GSÜ Kütüphanesi', lat: 41.0310, lng: 28.9890, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '109. Türk-Alman Üniversitesi Kütüphanesi', lat: 41.1350, lng: 29.1100, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '110. Koç Üniversitesi Suna Kıraç Kütüphanesi', lat: 41.2050, lng: 29.0750, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '111. Sabancı Üniversitesi Bilgi Merkezi', lat: 40.8900, lng: 29.3750, tur: 'universite', aciklama: 'Üniversite bilgi merkezi.' },
+      { ad: '112. Bilgi Üniversitesi Santralistanbul Kütüphanesi', lat: 41.0650, lng: 28.9450, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '113. Kadir Has Üniversitesi Bilgi Merkezi', lat: 41.0250, lng: 28.9580, tur: 'universite', aciklama: 'Üniversite bilgi merkezi.' },
+      { ad: '114. Yeditepe Üniversitesi Bilgi Merkezi', lat: 40.9700, lng: 29.1550, tur: 'universite', aciklama: 'Üniversite bilgi merkezi.' },
+      { ad: '115. Özyeğin Üniversitesi Bilgi Merkezi', lat: 41.0300, lng: 29.2250, tur: 'universite', aciklama: 'Üniversite bilgi merkezi.' },
+      { ad: '116. Bahçeşehir Üniversitesi Kütüphanesi', lat: 41.0420, lng: 29.0080, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '117. Kültür Üniversitesi Kütüphanesi', lat: 40.9900, lng: 28.8350, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '118. Aydın Üniversitesi Kütüphanesi', lat: 40.9950, lng: 28.7950, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '119. Maltepe Üniversitesi Kütüphanesi', lat: 40.9550, lng: 29.1950, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '120. İbn Haldun Üniversitesi Kütüphanesi', lat: 41.1050, lng: 28.7850, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '121. 29 Mayıs Üniversitesi Kütüphanesi', lat: 41.0250, lng: 29.0950, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '122. Fatih Sultan Mehmet Vakıf Üni. Kütüphanesi', lat: 41.0350, lng: 28.9450, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '123. Bezmialem Vakıf Üniversitesi Kütüphanesi', lat: 41.0150, lng: 28.9350, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '124. Sabahattin Zaim Üniversitesi Kütüphanesi', lat: 41.0350, lng: 28.7850, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '125. Medipol Üniversitesi Kütüphanesi', lat: 41.0950, lng: 29.0950, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '126. Acıbadem Üniversitesi Kütüphanesi', lat: 40.9800, lng: 29.1150, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '127. İstanbul Ticaret Üniversitesi Kütüphanesi', lat: 41.0450, lng: 28.9450, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '128. Beykent Üniversitesi Kütüphanesi', lat: 41.0150, lng: 28.6250, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '129. Piri Reis Üniversitesi Kütüphanesi', lat: 40.8150, lng: 29.3000, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '130. Haliç Üniversitesi Kütüphanesi', lat: 41.0550, lng: 28.9450, tur: 'universite', aciklama: 'Üniversite kütüphanesi.' },
+      { ad: '131. İBB Nail Baştürk Kütüphanesi', lat: 41.0300, lng: 28.8600, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '132. İBB Yedikule Kütüphanesi', lat: 40.9950, lng: 28.9220, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '133. İBB Evliya Çelebi Kütüphanesi', lat: 41.0200, lng: 28.9350, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '134. İBB Ahmet Hamdi Tanpınar Kütüphanesi', lat: 41.0250, lng: 28.9500, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '135. İBB Orhan Kemal Kütüphanesi', lat: 41.0300, lng: 28.9800, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '136. İBB Yahya Kemal Kütüphanesi', lat: 41.0400, lng: 29.0000, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '137. İBB Necip Fazıl Kütüphanesi', lat: 41.0500, lng: 28.9200, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '138. İBB Tarık Buğra Kütüphanesi', lat: 41.0400, lng: 28.8900, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '139. İBB Oğuz Atay Kütüphanesi', lat: 41.0200, lng: 29.0500, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' },
+      { ad: '140. İBB Sabahattin Ali Kütüphanesi', lat: 41.0300, lng: 29.0600, tur: 'kutuphane', aciklama: 'İBB kütüphanesi.' }
     ];
 
-    // ÖNEMLİ: Üstteki dizide eksik olan 140 veriyi bir önceki cevabımdaki listeden alıp buraya koyabilirsin.
+    let clusterGroup = L.markerClusterGroup();
+    let markerRefs = [];
 
-    const clusterGroup = L.markerClusterGroup();
-    
-    function updateMap(searchText = '', filterVal = 'all') {
+    function normalizeText(text) {
+      return text
+        .toLowerCase()
+        .replaceAll('ı', 'i')
+        .replaceAll('ğ', 'g')
+        .replaceAll('ü', 'u')
+        .replaceAll('ş', 's')
+        .replaceAll('ö', 'o')
+        .replaceAll('ç', 'c')
+        .replace(/[^a-z0-9 ]/g, '')
+        .trim();
+    }
+
+    function distance(a, b) {
+      const dp = Array(a.length + 1).fill(null).map(() => Array(b.length + 1).fill(0));
+      for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+      for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+      for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+        }
+      }
+      return dp[a.length][b.length];
+    }
+
+    function isSearchMatch(placeName, search) {
+      const query = normalizeText(search);
+      const name = normalizeText(placeName);
+      if (!query) return true;
+      if (name.includes(query)) return true;
+      const words = name.split(' ');
+      return words.some(word => distance(query, word) <= 2) || distance(query, name.slice(0, Math.max(query.length, 4))) <= 3;
+    }
+
+    function renderMarkers(search = '', filter = 'all') {
       clusterGroup.clearLayers();
-      
-      mekanlar.forEach(m => {
-        const matchesSearch = m.ad.toLowerCase().includes(searchText.toLowerCase());
-        const matchesFilter = filterVal === 'all' || m.tur === filterVal;
+      markerRefs = [];
 
-        if (matchesSearch && matchesFilter) {
-          const marker = L.marker([m.lat, m.lng]);
+      mekanlar.forEach(mekan => {
+        const nameMatch = isSearchMatch(mekan.ad, search);
+        const typeMatch = filter === 'all' || mekan.tur === filter;
+
+        if (nameMatch && typeMatch) {
+          const marker = L.marker([mekan.lat, mekan.lng]);
+          const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mekan.ad + ' İstanbul')}`;
           marker.bindPopup(`
-            <div class="popup-content">
-              <div class="popup-title">${m.ad}</div>
-              <div>${m.bilgi}</div>
-              <span class="category-badge">${m.tur}</span>
-            </div>
+            <div class="popup-title">${mekan.ad}</div>
+            <div>${mekan.aciklama}</div>
+            <div><strong>Tür:</strong> ${mekan.tur}</div>
+            <div style="margin-top:8px;"><a href="${mapsUrl}" target="_blank" rel="noopener">Google Maps’te kontrol et</a></div>
           `);
           clusterGroup.addLayer(marker);
+          markerRefs.push({ marker, mekan });
         }
       });
+
       map.addLayer(clusterGroup);
     }
 
-    // İlk yükleme
-    updateMap();
+    async function geocodeAndFix() {
+      for (let m of mekanlar) {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(m.ad + ' İstanbul')}`);
+          const data = await res.json();
+          if (data && data.length > 0) {
+            m.lat = parseFloat(data[0].lat);
+            m.lng = parseFloat(data[0].lon);
+          }
+        } catch (e) {}
+      }
+      renderMarkers();
+    }
 
-    // Dinamik Arama ve Filtreleme
-    document.getElementById('searchBox').addEventListener('input', (e) => {
-      updateMap(e.target.value, document.getElementById('filterType').value);
+    geocodeAndFix();
+
+    document.getElementById('searchBox').addEventListener('input', function() {
+      const query = this.value;
+      const currentFilter = document.getElementById('filterType').value;
+      renderMarkers(query, currentFilter);
+
+      if (query.trim().length > 1) {
+        const normalizedQuery = query.toLowerCase().trim();
+        let bestMatch = null;
+        let bestScore = Infinity;
+
+        function distance(a, b) {
+          const dp = Array(a.length + 1).fill(null).map(() => Array(b.length + 1).fill(0));
+          for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+          for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+          for (let i = 1; i <= a.length; i++) {
+            for (let j = 1; j <= b.length; j++) {
+              const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+              dp[i][j] = Math.min(
+                dp[i - 1][j] + 1,
+                dp[i][j - 1] + 1,
+                dp[i - 1][j - 1] + cost
+              );
+            }
+          }
+          return dp[a.length][b.length];
+        }
+
+        markerRefs.forEach(item => {
+          const score = distance(normalizedQuery, item.mekan.ad.toLowerCase());
+          if (item.mekan.ad.toLowerCase().includes(normalizedQuery)) {
+            bestMatch = item;
+            bestScore = 0;
+          } else if (score < bestScore) {
+            bestScore = score;
+            bestMatch = item;
+          }
+        });
+
+        if (bestMatch && bestScore <= 5) {
+          map.setView([bestMatch.mekan.lat, bestMatch.mekan.lng], 15);
+          bestMatch.marker.openPopup();
+        }
+      }
     });
 
-    document.getElementById('filterType').addEventListener('change', (e) => {
-      updateMap(document.getElementById('searchBox').value, e.target.value);
+    document.getElementById('filterType').addEventListener('change', function() {
+      renderMarkers(document.getElementById('searchBox').value, this.value);
     });
   </script>
 </body>
